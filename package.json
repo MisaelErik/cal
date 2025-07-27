@@ -12,6 +12,6 @@
     "react-dom": "18.2.0"
   },
   "scripts": {
-    "build": "echo \"No build step required, Vercel will serve static files.\""
+    "build": "ln -sfn . public"
   }
 }
