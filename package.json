@@ -1,0 +1,17 @@
+{
+  "name": "finan-calc-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An intelligent financial calculator that uses AI to analyze problems, create step-by-step plans from a comprehensive formula library, and compute solutions.",
+  "dependencies": {
+    "@google/genai": "0.14.0",
+    "html2canvas": "1.4.1",
+    "jspdf": "2.5.1",
+    "mathjs": "12.4.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "scripts": {
+    "build": "echo \"No build step required, Vercel will serve static files.\""
+  }
+}
