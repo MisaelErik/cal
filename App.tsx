@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import type { AppResult, Provider, Mode, User, HistoryItem, View, Notification as NotificationType, RedeemCode, BroadcastMessage, ChatMessage } from './types';
 import { generateCalculationPlan, extractTextFromImage, generateChatResponse } from './services/geminiService';
 import { executePlan } from './services/calculationEngine';
@@ -10,19 +10,22 @@ import { ErrorAlert } from './components/Alerts';
 import { Controls } from './components/Controls';
 import Login from './components/Login';
 import ProModal from './components/ProModal';
-import AdminPanel from './components/AdminPanel';
-import HistoryPanel from './components/HistoryPanel';
-import ManualCalculator from './components/ManualCalculator';
 import Notification from './components/Notification';
 import RedeemCodeModal from './components/RedeemCodeModal';
-import DatabaseGuide from './components/DatabaseGuide';
-import FollowUpChat from './components/FollowUpChat';
 import Sidebar from './components/Sidebar';
 import { useUsers } from './hooks/useUsers';
 import { useHistory } from './hooks/useHistory';
 import { useCodes } from './hooks/useCodes';
 import { useBroadcasts } from './hooks/useBroadcasts';
 import { useUserMessages } from './hooks/useUserMessages';
+
+// Lazy-loaded components for code splitting
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
+const HistoryPanel = React.lazy(() => import('./components/HistoryPanel'));
+const ManualCalculator = React.lazy(() => import('./components/ManualCalculator'));
+const DatabaseGuide = React.lazy(() => import('./components/DatabaseGuide'));
+const FollowUpChat = React.lazy(() => import('./components/FollowUpChat'));
+
 
 const PROVIDER_NAMES: Record<Provider, string> = {
     gemini_studio: 'Google AI Studio',
@@ -440,6 +443,13 @@ const App: React.FC = () => {
                 );
         }
     };
+    
+    const SuspenseFallback = (
+        <div className="flex justify-center items-center mt-8 p-8 bg-white dark:bg-slate-800/50 dark:border dark:border-slate-700 rounded-xl shadow-md">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="ml-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Cargando vista...</p>
+        </div>
+    );
 
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
@@ -464,7 +474,9 @@ const App: React.FC = () => {
                 />
                 <main className="flex-grow overflow-y-auto">
                     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-                        {renderView()}
+                        <Suspense fallback={SuspenseFallback}>
+                            {renderView()}
+                        </Suspense>
                     </div>
                 </main>
             </div>
