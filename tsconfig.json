@@ -25,6 +25,7 @@
     "index.tsx",
     "types.ts",
     "constants.ts",
+    "config.ts",
     "components",
     "data",
     "hooks",
