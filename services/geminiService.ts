@@ -1,8 +1,10 @@
 
 
+
 import { GoogleGenAI } from '@google/genai';
 import type { CalculationPlan, Mode, Provider, ChatMessage, ExecutedStep, AppResult } from '../types';
 import { PRECISE_SYSTEM_PROMPT, EXPERIMENTAL_SYSTEM_PROMPT, OPENROUTER_MODELS, CHAT_SYSTEM_PROMPT, PROVIDER_NAMES } from '../constants';
+import { API_KEYS } from '../config';
 
 type OpenRouterProvider = 'openrouter_kimi' | 'openrouter_mistral' | 'openrouter_geo' | 'openrouter_deepseek';
 
@@ -25,9 +27,9 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export async function extractTextFromImage(file: File): Promise<string> {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-        throw new Error("La clave de API para Google AI Studio no está configurada en las variables de entorno (API_KEY).");
+    const apiKey = API_KEYS.API_KEY;
+    if (!apiKey || apiKey.includes('...')) {
+        throw new Error("La clave de API para Google AI Studio no está configurada en el archivo config.ts. Por favor, añade la clave completa.");
     }
     const ai = new GoogleGenAI({ apiKey });
     
@@ -58,9 +60,9 @@ async function callGoogleStudio(systemPrompt: string, userPrompt: string, signal
     // This is included for API consistency. We can check for aborts before the call.
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
     
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-        throw new Error("La clave de API para Google AI Studio no está configurada en las variables de entorno (API_KEY).");
+    const apiKey = API_KEYS.API_KEY;
+    if (!apiKey || apiKey.includes('...')) {
+        throw new Error("La clave de API para Google AI Studio no está configurada en el archivo config.ts. Por favor, añade la clave completa.");
     }
     const ai = new GoogleGenAI({ apiKey });
     
@@ -81,18 +83,18 @@ async function callOpenRouter(provider: OpenRouterProvider, systemPrompt: string
     const providerKey = provider.replace('openrouter_', '') as keyof typeof OPENROUTER_MODELS;
     const model = OPENROUTER_MODELS[providerKey];
 
-    const API_KEY_ENV_MAP: Record<OpenRouterProvider, string> = {
+    const API_KEY_MAP: Record<OpenRouterProvider, keyof typeof API_KEYS> = {
         'openrouter_kimi': 'OPENROUTER_KIMI_API_KEY',
         'openrouter_mistral': 'OPENROUTER_MISTRAL_API_KEY',
         'openrouter_geo': 'OPENROUTER_GEO_API_KEY',
         'openrouter_deepseek': 'OPENROUTER_DEEPSEEK_API_KEY'
     };
     
-    const apiKeyName = API_KEY_ENV_MAP[provider];
-    const apiKey = process.env[apiKeyName];
+    const apiKeyName = API_KEY_MAP[provider];
+    const apiKey = API_KEYS[apiKeyName];
 
-    if (!apiKey) {
-        throw new Error(`La clave de API para '${PROVIDER_NAMES[provider]}' no está configurada. Por favor, defina la variable de entorno '${apiKeyName}'.`);
+    if (!apiKey || apiKey.includes('...')) {
+        throw new Error(`La clave de API para '${PROVIDER_NAMES[provider]}' no está configurada en el archivo config.ts. Por favor, añade la clave completa.`);
     }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -210,7 +212,7 @@ export async function generateCalculationPlan(provider: Exclude<Provider, 'all'>
                 throw error; // Re-throw AbortError to be handled upstream
             }
             // Do not wrap the error if it's already descriptive
-            if (error.message.includes('API de OpenRouter') || error.message.includes('Google AI Studio') || error.message.includes('procesar la respuesta') || error.message.includes('El proveedor') || error.message.includes('Por favor, defina la variable de entorno')) {
+            if (error.message.includes('API de OpenRouter') || error.message.includes('Google AI Studio') || error.message.includes('procesar la respuesta') || error.message.includes('El proveedor') || error.message.includes('Por favor, defina la variable de entorno') || error.message.includes('config.ts')) {
                 throw error;
             }
             throw new Error(`Error de la API para ${provider}: ${error.message}`);
@@ -221,8 +223,10 @@ export async function generateCalculationPlan(provider: Exclude<Provider, 'all'>
 
 async function callChatApi(provider: Exclude<Provider, 'all'>, systemPrompt: string, userPrompt: string, signal: AbortSignal): Promise<string> {
     if (provider === 'gemini_studio') {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) throw new Error("La clave de API para Google AI Studio no está configurada en las variables de entorno (API_KEY).");
+        const apiKey = API_KEYS.API_KEY;
+        if (!apiKey || apiKey.includes('...')) {
+             throw new Error("La clave de API para Google AI Studio no está configurada en el archivo config.ts. Por favor, añade la clave completa.");
+        }
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
